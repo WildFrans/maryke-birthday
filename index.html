@@ -53,6 +53,7 @@ nav a:hover{color:var(--gold)}
 .hero-photos div{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 2.5s;
   filter:grayscale(1) sepia(.35) contrast(.9) brightness(.85);mix-blend-mode:luminosity}
 .hero-photos div.on{opacity:.16}
+.hero-photos div.first{transition-duration:.4s}
 .hero::after{content:"";position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse at center,transparent 30%,var(--ink) 85%)}
 .hero .frame{z-index:1;border:1px solid var(--line);padding:56px 40px 44px;max-width:780px;width:100%;position:relative;background:rgba(15,34,51,.5);backdrop-filter:blur(2px)}
 .hero .frame::before,.hero .frame::after{content:"";position:absolute;width:26px;height:26px;border:1px solid var(--gold)}
@@ -521,12 +522,12 @@ $("#icsBtn").onclick = () => {
 
 /* ---------- photos: gallery + faded hero watermark slideshow ---------- */
 const fallbackIcons = ["i-laugh","i-cheers","i-mimosa","i-friends","i-potjie","i-hearts"];
-const loaded = [];
+const loaded = CONFIG.photos.slice();
+if(loaded.length) startHero(); // start the hero background right away, no waiting for image events
 CONFIG.photos.forEach((src,i)=>{
   const ph = document.createElement("div"); ph.className="ph";
   ph.innerHTML = `<div class="fallback"><svg viewBox="0 0 ${fallbackIcons[i%6]==="i-friends"?120:100} 100"><use href="#${fallbackIcons[i%6]}"/></svg></div>`;
-  const img = new Image(); img.alt = i===2 ? "Mimosas and brunch on the deck" : "Maryke " + (i+1); img.loading = "lazy";
-  img.onload = () => { loaded.push(src); if(loaded.length===1) startHero(); };
+  const img = new Image(); img.alt = i===2 ? "Mimosas and brunch on the deck" : "Maryke " + (i+1); img.loading = "eager"; img.decoding = "async";
   img.onerror = () => img.remove();
   img.src = src; ph.appendChild(img);
   ph.onclick = () => { if(!img.isConnected||!img.naturalWidth) return; $("#lb img").src = img.src; $("#lb").classList.add("on"); };
@@ -539,7 +540,8 @@ function startHero(){
   const show = () => {
     const src = loaded[i++ % loaded.length];
     const d = document.createElement("div"); d.style.backgroundImage = `url("${src}")`;
-    box.appendChild(d); requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.add("on")));
+    if(i===1) d.className = "first"; // first photo fades in quickly; later ones crossfade slowly
+    box.appendChild(d); requestAnimationFrame(()=>d.classList.add("on"));
     const old = box.children; if(old.length>2){ old[0].classList.remove("on"); setTimeout(()=>old[0]&&old[0].remove(),2600); }
   };
   show(); setInterval(show,6000);
